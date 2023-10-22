@@ -2,74 +2,35 @@ version: "3.3"
 
 services:
   zookeeper:
-    image: wurstmeister/zookeeper 
+    image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper 
     ports:
       - 2181:2181 
+    networks:
+      - kafkanet
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
 
   broker1:
-    image: wurstmeister/kafka
+    image: confluentinc/cp-kafka:latest
     container_name: kafka-broker-1
-    hostname: broker1 
     ports:
-      - 9092:9092
+      - 29092:29092
+      - 39092:39092
+    networks:
+      - kafkanet
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT, SAME_EXTERNAL:PLAINTEXT
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_ADVERTISED_HOST_NAME=broker1 
-      - KAFKA_ADVERTISED_PORT=9092
-      - KAFKA_LISTENERS=INTERNAL://broker1:9092
-      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://broker1:9092
+      - KAFKA_LISTENERS=INTERNAL://:9092, SAME_EXTERNAL://:29092
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://broker1:9092, SAME_EXTERNAL://localhost:29092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 # This is required when you are running with a single-node cluster
     depends_on:
       - zookeeper
 
-  broker2:
-    image: wurstmeister/kafka
-    container_name: kafka-broker-2
-    hostname: broker2
-    ports:
-      - 9093:9093
-    environment:
-      - KAFKA_BROKER_ID=2
-      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_ADVERTISED_HOST_NAME=broker2 
-      - KAFKA_ADVERTISED_PORT=9093
-      - KAFKA_LISTENERS=INTERNAL://broker2:9093
-      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://broker2:9093
-    depends_on:
-      - zookeeper
-
-  broker3:
-    image: wurstmeister/kafka
-    container_name: kafka-broker-3
-    hostname: broker3
-    ports:
-      - 9094:9094
-    environment:
-      - KAFKA_BROKER_ID=3
-      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_ADVERTISED_HOST_NAME=broker3
-      - KAFKA_ADVERTISED_PORT=9094
-      - KAFKA_LISTENERS=INTERNAL://broker3:9094
-      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://broker3:9094
-    depends_on:
-      - zookeeper
-
-  kafdrop:
-    image: obsidiandynamics/kafdrop
-    container_name: kafdrop
-    ports:
-      - 9000:9000
-    environment:
-      - KAFKA_BROKERCONNECT=broker1:9092, broker2:9093, broker3:9094
-      - JVM_OPTS=-Xmx64M
-    depends_on:
-      - broker1
-      - broker2
-      - broker3
+networks:
+  kafkanet:
+    name: kafkanetlayer
+    
